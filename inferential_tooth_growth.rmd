@@ -1,0 +1,141 @@
+---
+title: "Inferential_Tooth_Growth"
+author: "JeremiShane"
+date: "11/22/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Overview
+The central limit theorem (CLT) establishes that, in most situations, when independent random variables are added, their properly normalized sum tends toward a normal distribution (informally a "bell curve") even if the original variables themselves are not normally distributed.  We will evaluate this theory with the averages/means of simulated exponentials.
+ 
+A comparison of the means or averages of 1000 simulated exponential distributions in R with the Central Limit Theorem.  This investigation uses simulations with size(n) =  10, 20, 30 40, 50 and 100 exponentials.
+
+Note - The simulation with means from forty exponentials will be used by default, when only one distribution is evaluated.  Referred to as 'forty_mean'
+
+From Wikipedia, the exponential distribution occurs naturally when describing the lengths of the inter-arrival times in a homogeneous Poisson process.  The exponential distribution describes the time for a continuous process to change state
+
+This analysis is organized as follows:  
+1. Simulations  
+2. Sample Mean versus Theoretical Mean  
+3. Sample Variance versus Theoretical Variance  
+4. Distribution  
+
+First, let's have a quick look at an exponential distribution and a normal distribition.
+
+Lambda is the rate parameter for rexp() exponential simulation function in R.  We will be using lambda=.2.  Mean of the exponential distribution is 1/lambda, and standard deviation is also 1/lambda.  
+
+```{r expvsnormal, echo=FALSE}
+set.seed(23)
+## lambda is the rate parameter for rexp() exponential simulation function in R
+## The mean of exponential distribution is 1/lambda and the standard deviation is also 1/lambda.
+lambda <- 0.2
+par(mfrow=c(1,2), oma=c(0,0,0,0))
+randomexponential <- rexp(10000, lambda)
+re <- density(randomexponential)
+plot(re, type="n", main="random exponential density")
+polygon(re, col="red", border="grey")
+abline(v=mean(randomexponential), col="black", lwd=2)
+legend('topright', "mean", lty=1, col="black", lwd=2)
+set.seed(23)
+randomnormal <- rnorm(10000)
+rn <-density(randomnormal)
+plot(rn, type="n", main="random normal density")
+polygon(rn, col="red", border="grey")
+abline(v=mean(randomnormal), col="black", lwd=2)
+```  
+
+We can see from these two simple histograms that an exponential distribution does not look normal.  To carry out our experiment, we will look at the means of multiple exponential distributions.  The Central limit theorem tells us that even though the exponential distribution is not normal, the means from large enough number of exponential distributions should approach normal.     
+
+## Simulation of Exponentials
+Below is the R code for simulating the exponential distribution with size = 10, 40 and 100.  In each case we perform 1000 simulations and take the mean of each simulation.  So we end up with 1000 means from 10, 40 and 100 sized exponential distributions.  
+
+```{r p1simulation}
+set.seed(23)  ## set seed for reproducability
+## run 1000 simulations
+nsims <- 1000
+n <- 40 ## our default number of exponentials
+ten_mean = sapply(1:nsims, function(x) {mean(rexp(10, lambda))})
+twenty_mean = sapply(1:nsims, function(x) {mean(rexp(20, lambda))})
+thirty_mean = sapply(1:nsims, function(x) {mean(rexp(30, lambda))})
+forty_mean = sapply(1:nsims, function(x) {mean(rexp(n, lambda))})
+fifty_mean = sapply(1:nsims, function(x) {mean(rexp(50, lambda))})
+hundred_mean = sapply(1:nsims, function(x) {mean(rexp(100, lambda))})
+```
+  
+## Simulated Mean vs. Theoretical Mean
+With lambda = .2, an exponential distribution should have mean = 1/lambda = 5, and standard deviation = 1/lambda as well.  We would expect the means from 1000 of these exponential distributions to be a normal distribution around 5, from the Central Limit Theorem.  Let's have a look at the means of our 1000 means compared to the 1/lambda = 5.  
+
+```{r theMeans, echo=FALSE}
+meansdf <- data.frame("theoreticalMean"=1/lambda)
+## meansdf$tenMean <- mean(ten_mean)
+meansdf$fortyMean <- mean(forty_mean)
+## meansdf$hundredMean <- mean(hundred_mean)
+meansdf
+```  
+These calculations show that the theoretical mean and the mean from each of our simulations are very close.
+
+## Simulated Variance vs. Theoretical Variance
+Variance...  
+- of an exponential distribution is 1/lambda^2   
+- for a normal distribution is sd^2  
+
+```{r theVariance, echo=FALSE}
+variancedf <- data.frame("theoreticalVariance" = 1/lambda^2/n)
+## 1/lambda^2/n  ## our theoretical variance for 1000 means of n=40 size exponentials
+variancedf$simulatedVariance <- var(forty_mean)  ## the actual variance of our 40 size exponential simulation
+variancedf
+```   
+We see here that the theoretical variance and calculated variance from our simulated distribution is very close.    
+
+```{r varlineapproach, echo=FALSE}
+vx <- c(var(ten_mean)-1/lambda^2/10, var(twenty_mean)-1/lambda^2/20, var(thirty_mean)-1/lambda^2/30, var(forty_mean)-1/lambda^2/n, var(fifty_mean)-1/lambda^2/50, var(hundred_mean)-1/lambda^2/100)
+ylabel <- c(10, 20, 30, 40, 50, 100)
+lo <- loess(ylabel ~ vx)
+##plot(vx, ylabel, main="difference in theoretical and actual variance", xlab="theoretical minus actual variance", ylab = "sample size index")
+##lines(predict(lo), col='red', lwd=2)
+```
+
+## Distribution  
+Let's look at a histogram distribution and a qq plot of our forty_mean simulation.
+
+```{r histogram}
+par(mfrow=c(1,2), oma=c(0,0,0,0))
+hist(forty_mean, breaks=10, prob=TRUE, main="Histogram") 
+lines(density(forty_mean), col="black")
+## the theoretical center of distribution is 1/lambda (vertical line at mean)
+abline(v=1/lambda, col="red", lty=1, lwd=1.5)
+## our simulated mean/center
+abline(v=mean(forty_mean), col="black", lwd=1.5)
+legend('topright', c("simulated mean", "theoretical mean"), lty=c(1,1), col=c("black", "red"))
+
+qqnorm(forty_mean); qqline(forty_mean)
+```   
+
+Both of these indicate the Central Limit Theorem is holding true.  The distribution is forming a normal bell curve around 5.
+
+Let's refer back to our exponential distribution of size = 1000, and then look at the distribution of the means of our simulations as n gets larger.
+
+```{r distribution, echo = FALSE}
+par(mfrow=c(1,3), oma=c(0,0,0,0))
+randomexponential <- rexp(10000, lambda)
+re <- density(randomexponential)
+plot(re, type="n", main="random exponential density")
+polygon(re, col="red", border="grey")
+abline(v=mean(randomexponential), col="black", lwd=2)
+legend('topright', "mean", lty=1, col="black", lwd=2)
+
+d <- density(forty_mean)
+plot(d, type="n", main="forty mean simulation")
+polygon(d, col="red", border="grey")
+abline(v=mean(forty_mean), col="black", lwd=2)
+
+d <- density(hundred_mean)
+plot(d, type="n", main="hundred mean simulation")
+polygon(d, col="red", border="grey")
+abline(v=mean(hundred_mean), col="black", lwd=2)
+```   
+
+The larger n gets, the closer to normal it gets.  It is safe to say that our experiment shows clearly the Central Limit Theorem holding true. 
